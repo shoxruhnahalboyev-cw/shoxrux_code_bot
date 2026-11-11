@@ -66,7 +66,6 @@ DAY_1_POLLS = [
     {"question": "Kuniga o'rtacha necha soat kompyuter yoki telefon qarshisida o'tqazasiz?", "options": ["2-4 soat", "5-7 soat", "8-10 soat", "10 soatdan ko'p"]}
 ]
 
-
 # 2-KUN ELEMENTLARI
 DAY_2_FACTS_AND_TIPS = [
     "🧠 <b>IT Fakti #1:</b> Python dasturlash tili ilon sharafiga emas, balki muallifning sevimli 'Monty Python's Flying Circus' nomli komediya shousi nomidan kelib chiqqan.",
@@ -79,7 +78,6 @@ DAY_2_POLLS = [
     {"question": "IT sohasida ishlashni boshlash uchun eng asosiy qadam nima?", "options": ["Kuchli ingliz tili", "Amaliy loyihalar", "Nazandiy bilim", "Mentor yordami"]},
     {"question": "Sizga qaysi yo'nalish ko'proq yoqadi?", "options": ["Front-end", "Back-end", "Mobil ilovalar", "Sun'iy intellekt (AI)"]}
 ]
-
 
 # 3-KUN ELEMENTLARI
 DAY_3_FACTS_AND_TIPS = [
@@ -158,6 +156,7 @@ async def cmd_start(message: Message):
     username = f"@{message.from_user.username}" if message.from_user.username else "Yo'q"
     args = message.text.split()
     
+    # Agar foydalanuvchi admin bo'lsa, kanalga a'zo bo'lgani tekshirilmaydi
     if user_id == ADMIN_ID:
         await message.answer(
             f"👑 <b>Assalomu alaykum, Xojayin (Admin)!</b>\n\n"
@@ -397,7 +396,6 @@ async def start_web_server():
 
 # --- BOT ISHGA TUSHGANDagi AMALLAR ---
 async def main():
-    # Render uchun 10000-portda web serverni ishga tushiramiz (UptimeRobot uchun)
     await start_web_server()
 
     scheduler = AsyncIOScheduler()

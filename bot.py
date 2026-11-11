@@ -138,8 +138,12 @@ async def set_bot_commands(bot: Bot):
     ]
     await bot.set_my_commands(commands)
 
-# --- KANALGA A'ZO BO'LGANINI TEKSHIRISH ---
+# --- KANALGA A'ZO BO'LGANINI TEKSHIRISH (ADMIN UCHUN OCHIQ) ---
 async def check_user_channel(user_id: int) -> bool:
+    # Agar foydalanuvchi Admin bo'lsa, tekshirib o'tirmasdan True qaytaradi!
+    if user_id == ADMIN_ID:
+        return True
+        
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
         if member.status in ["member", "administrator", "creator"]:
@@ -156,7 +160,6 @@ async def cmd_start(message: Message):
     username = f"@{message.from_user.username}" if message.from_user.username else "Yo'q"
     args = message.text.split()
     
-    # Agar foydalanuvchi admin bo'lsa, kanalga a'zo bo'lgani tekshirilmaydi
     if user_id == ADMIN_ID:
         await message.answer(
             f"👑 <b>Assalomu alaykum, Xojayin (Admin)!</b>\n\n"
@@ -257,6 +260,15 @@ async def cmd_my_account(message: Message):
         await message.answer("👑 Siz Adminsiz! Sizda balans mavjud emas.")
         return
 
+    # Oddiy foydalanuvchilar uchun kanal obunasini tekshirish
+    if not await check_user_channel(user_id):
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+            [InlineKeyboardButton(text="✅ Obunani tekshirish", callback_data="check_sub")]
+        ])
+        await message.answer("⚠️ Botdan foydalanish uchun avval kanalimizga a'zo bo'lishingiz kerak.", reply_markup=keyboard)
+        return
+
     conn = sqlite3.connect("bot_base.db")
     cursor = conn.cursor()
     cursor.execute("SELECT balance, invited_count FROM users WHERE user_id = ?", (user_id,))
@@ -323,6 +335,14 @@ async def callback_withdraw(callback: CallbackQuery):
 # --- /HELP KOMANDASI ---
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
+    if message.from_user.id != ADMIN_ID and not await check_user_channel(message.from_user.id):
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+            [InlineKeyboardButton(text="✅ Obunani tekshirish", callback_data="check_sub")]
+        ])
+        await message.answer("⚠️ Botdan foydalanish uchun avval kanalimizga a'zo bo'lishingiz kerak.", reply_markup=keyboard)
+        return
+
     text = (
         "ℹ️ <b>Yordam bo'limi:</b>\n\n"
         f"• Shaxsiy havolangiz orqali do'stlaringizni taklif qiling (Har {REQUIRED_INVITES} ta do'st uchun +{INVITE_REWARD} so'm qo'shiladi).\n"
@@ -333,6 +353,14 @@ async def cmd_help(message: Message):
 # --- /OGOHLANTIRISH KOMANDASI ---
 @dp.message(Command("ogohlantirish"))
 async def cmd_warning(message: Message):
+    if message.from_user.id != ADMIN_ID and not await check_user_channel(message.from_user.id):
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+            [InlineKeyboardButton(text="✅ Obunani tekshirish", callback_data="check_sub")]
+        ])
+        await message.answer("⚠️ Botdan foydalanish uchun avval kanalimizga a'zo bo'lishingiz kerak.", reply_markup=keyboard)
+        return
+
     text = (
         f"⚠️ <b>Ogohlantirish!</b>\n\n"
         f"Hisobingizdan pul yechib olish uchun hisobingizda kamida <b>{MIN_WITHDRAW} so'm</b> bo'lishi kerak!"
@@ -399,7 +427,7 @@ async def main():
     await start_web_server()
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_auto_post, "interval", hours=3)
+    scheduler.add_job(send_auto_post, "interval", hours=5)
     scheduler.start()
 
     await set_bot_commands(bot)

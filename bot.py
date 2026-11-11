@@ -399,7 +399,7 @@ async def main():
     await start_web_server()
 
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(send_auto_post, "interval", hours=5)
+    scheduler.add_job(send_auto_post, "interval", hours=3)
     scheduler.start()
 
     await set_bot_commands(bot)

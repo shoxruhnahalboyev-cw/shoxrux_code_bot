@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web  # <--- UptimeRobot va Render uchun qo'shildi
 
-TOKEN = "9297297005:AAGTgrLeGC_TeXUAx0s8KOL9WccjCVEaQkQ"
+TOKEN = "9297297005:AAH6kj7a_pToJoQktbOI1zTfCkjJMpLQQcs"
 CHANNEL_USERNAME = "@shoxrux_code"      # Kanal username'ingiz
 ADMIN_ID = 7439126820                   # O'zingizning Telegram ID'ingiz
 STARTING_BALANCE = 3000                 # Boshlang'ich summa (3 ming)

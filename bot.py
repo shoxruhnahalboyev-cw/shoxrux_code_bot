@@ -94,19 +94,87 @@ async def check_user_channel(user_id: int) -> bool:
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
     admin_states.pop(message.from_user.id, None)
-    if message.from_user.id == ADMIN_ID:
+    user_id = message.from_user.id
+    first_name = message.from_user.first_name or "Foydalanuvchi"
+    username = message.from_user.username or ""
+
+    if user_id == ADMIN_ID:
         await message.answer("👑 <b>Xush kelibsiz, Admin!</b>", reply_markup=ReplyKeyboardRemove())
         return
 
-    is_sub = await check_user_channel(message.from_user.id)
+    # Referral argumentini olish (masalan: /start 123456789)
+    args = message.text.split()
+    referrer_id = None
+    if len(args) > 1 and args[1].isdigit():
+        ref_id = int(args[1])
+        if ref_id != user_id:
+            referrer_id = ref_id
+
+    # Bazaga foydalanuvchini qo'shish (agar oldin bo'lmasa)
+    conn = sqlite3.connect("bot_base.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, balance FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        cursor.execute("""
+            INSERT INTO users (user_id, referrer_id, balance, invited_count, first_name, username)
+            VALUES (?, ?, ?, 0, ?, ?)
+        """, (user_id, referrer_id, STARTING_BALANCE, first_name, username))
+        
+        # Agar taklif qilgan odam bo'lsa va u bazada bo'lsa
+        if referrer_id:
+            cursor.execute("SELECT invited_count, balance FROM users WHERE user_id = ?", (referrer_id,))
+            ref_user = cursor.fetchone()
+            if ref_user:
+                new_invited = ref_user[0] + 1
+                new_bal = ref_user[1] + INVITE_REWARD
+                cursor.execute("UPDATE users SET invited_count = ?, balance = ? WHERE user_id = ?", (new_invited, new_bal, referrer_id))
+                try:
+                    await bot.send_message(
+                        referrer_id, 
+                        f"🎉 Tabriklaymiz! Sizning havolangiz orqali yangi foydalanuvchi qo'shildi va balansingizga {INVITE_REWARD:,} so'm qo'shildi!"
+                    )
+                except:
+                    pass
+        conn.commit()
+    conn.close()
+
+    # Obunani tekshirish
+    is_sub = await check_user_channel(user_id)
     if not is_sub:
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📢 Obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
-            [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_sub")]
+            [InlineKeyboardButton(text="📢 Kanalga obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+            [InlineKeyboardButton(text="✅ Obunani tekshirish", callback_data="check_sub")]
         ])
-        await message.answer("⚠️ Botdan foydalanish uchun kanalimizga a'zo bo'ling.", reply_markup=kb)
+        await message.answer("⚠️ Botdan foydalanish uchun avval kanalimizga a'zo bo'ling!", reply_markup=kb)
     else:
-        await message.answer("🎉 Xush kelibsiz! Botdan to'liq foydalanishingiz mumkin.", reply_markup=ReplyKeyboardRemove())
+        bot_info = await bot.get_me()
+        ref_link = f"https://t.me/{bot_info.username}?start={user_id}"
+        text = (
+            "✅ <b>Kanalga obuna tasdiqlandi!</b>\n\n"
+            f"🎉 Tabriklaymiz! Siz <b>{STARTING_BALANCE:,} so'm</b> pul yutib oldingiz!\n\n"
+            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, yana <b>{INVITE_REWARD:,} so'm</b> yutib olasiz!\n\n"
+            f"🔗 <b>Sizning shaxsiy taklif havolangiz:</b>\n{ref_link}"
+        )
+        await message.answer(text, reply_markup=ReplyKeyboardRemove())
+
+@dp.callback_query(F.data == "check_sub")
+async def callback_check_sub(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if await check_user_channel(user_id):
+        await callback.message.delete()
+        bot_info = await bot.get_me()
+        ref_link = f"https://t.me/{bot_info.username}?start={user_id}"
+        text = (
+            "✅ <b>Kanalga obuna tasdiqlandi!</b>\n\n"
+            f"🎉 Tabriklaymiz! Siz <b>{STARTING_BALANCE:,} so'm</b> pul yutib oldingiz!\n\n"
+            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, yana <b>{INVITE_REWARD:,} so'm</b> yutib olasiz!\n\n"
+            f"🔗 <b>Sizning shaxsiy taklif havolangiz:</b>\n{ref_link}"
+        )
+        await callback.message.answer(text)
+    else:
+        await callback.answer("❌ Siz hali kanalga a'zo bo'lmadingiz!", show_alert=True)
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
@@ -147,29 +215,44 @@ async def cmd_cancel(message: Message):
 @dp.message(Command("hisobim"))
 async def cmd_my_account(message: Message):
     admin_states.pop(message.from_user.id, None)
-    if message.from_user.id == ADMIN_ID:
+    user_id = message.from_user.id
+    if user_id == ADMIN_ID:
         await message.answer("👑 Siz Adminsiz!", reply_markup=ReplyKeyboardRemove())
         return
-    await message.answer("💳 Hisobingiz ma'lumotlari...", reply_markup=ReplyKeyboardRemove())
+    
+    conn = sqlite3.connect("bot_base.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT balance, invited_count FROM users WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    balance = row[0] if row else 0
+    invited = row[1] if row else 0
+    
+    text = (
+        f"💳 <b>Hisobingiz ma'lumotlari:</b>\n\n"
+        f"💰 Balansingiz: <b>{balance:,} so'm</b>\n"
+        f"👥 Taklif qilgan do'stlaringiz: <b>{invited} ta</b>\n"
+        f"🎯 Minimal pul yechish: <b>{MIN_WITHDRAW:,} so'm</b>"
+    )
+    await message.answer(text, reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("ℹ️ Yordam bo'limi.", reply_markup=ReplyKeyboardRemove())
+    await message.answer("ℹ️ <b>Yordam bo'limi:</b>\n\nBotimiz orqali IT olamidagi qiziqarli faktlar va so'rovnomalardan bahramand bo'ling.", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("ogohlantirish"))
 async def cmd_warning(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("⚠️ Ogohlantirish shartlari.", reply_markup=ReplyKeyboardRemove())
-
-@dp.callback_query(F.data == "check_sub")
-async def callback_check_sub(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if await check_user_channel(user_id):
-        await callback.message.delete()
-        await callback.message.answer("✅ Obuna tasdiqlandi! Xush kelibsiz.")
-    else:
-        await callback.answer("❌ Siz hali kanalga a'zo bo'lmadingiz!", show_alert=True)
+    warning_text = (
+        "⚠️ <b>OGOHLANTIRISH VA QOIDALAR:</b>\n\n"
+        "1. Botdan foydalanish uchun rasmiy kanalimizga a'zo bo'lishingiz shart (`@shoxrux_code`).\n"
+        f"2. Minimal pul yechish summasi: <b>{MIN_WITHDRAW:,} so'm</b>.\n"
+        f"3. Har bir taklif qilingan do'st uchun mukofot: <b>{INVITE_REWARD:,} so'm</b>.\n"
+        "4. Qoidabuzarlik aniqlansa, balans muzlatib qo'yiladi."
+    )
+    await message.answer(warning_text, reply_markup=ReplyKeyboardRemove())
 
 # ==================== 2. ADMIN TUGMALARI VA MATNLAR ====================
 

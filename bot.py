@@ -43,7 +43,6 @@ def db_start():
         )
     """)
     
-    # Yangi vaqtlar va maydonlarga moslashtirilgan shablon jadvali
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS daily_template (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -146,7 +145,7 @@ async def set_template_start(message: Message):
     await message.answer(
         "✍️ **Yangi kunlik shablonni yuboring:**\n\n"
         "Quyidagi **7 ta qismni** `---` belgisi bilan ajratib bitta xabarda yuboring:\n\n"
-        "1. **09:00** - IT haqida katta qiziqarli fakt (kamida 30 qator)\n---\n"
+        "1. **09:00** - IT haqida katta qiziqarli fakt\n---\n"
         "2. **12:00** - Qiziqarli so'rovnoma savoli (Poll)\n---\n"
         "3. **12:00** - So'rovnoma variantlari (vergul bilan)\n---\n"
         "4. **18:00** - Hackerlar haqida rasm bilan yuboriladigan qiziqarli katta matn\n---\n"
@@ -190,9 +189,6 @@ async def handle_admin_text(message: Message):
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}\nFormatni tekshirib qaytadan yuboring.")
 
-# --- YANGI VAQTDAGI AVTO-POSTLAR ---
-
-# 1. Soat 09:00 - Katta IT fakt
 async def send_morning_fact():
     try:
         conn = sqlite3.connect("bot_base.db")
@@ -205,7 +201,6 @@ async def send_morning_fact():
     except Exception as e:
         print(f"09:00 xatolik: {e}")
 
-# 2. Soat 12:00 - Qiziqarli so'rovnoma
 async def send_lunch_poll():
     try:
         conn = sqlite3.connect("bot_base.db")
@@ -220,7 +215,6 @@ async def send_lunch_poll():
     except Exception as e:
         print(f"12:00 xatolik: {e}")
 
-# 3. Soat 18:00 - Hackerlar haqida katta matn (va rasm bilan)
 async def send_hacker_post():
     try:
         conn = sqlite3.connect("bot_base.db")
@@ -230,13 +224,11 @@ async def send_hacker_post():
         conn.close()
         if row:
             text = row[0]
-            # Misol tariqasida hackerlar mavzusiga oid chiroyli rasm bilan yuboramiz:
             hacker_photo_url = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5"
             await bot.send_photo(chat_id=CHANNEL_USERNAME, photo=hacker_photo_url, caption=text)
     except Exception as e:
         print(f"18:00 xatolik: {e}")
 
-# 4. Soat 22:00 - Kuchli mantiqiy Quiz va shablonni o'chirish
 async def send_night_quiz():
     try:
         conn = sqlite3.connect("bot_base.db")
@@ -256,7 +248,6 @@ async def send_night_quiz():
                 correct_option_id=correct_idx
             )
         
-        # Kechki quiz ketgach, eskigan shablonni bazadan to'liq o'chiramiz
         conn = sqlite3.connect("bot_base.db")
         cursor = conn.cursor()
         cursor.execute("DELETE FROM daily_template")
@@ -298,34 +289,34 @@ async def cmd_start(message: Message):
     if message.from_user.id == ADMIN_ID:
         await message.answer("👑 <b>Xush kelibsiz, Admin!</b>", reply_markup=ReplyKeyboardRemove())
         return
-    # Foydalanuvchi qismi...
+
     is_sub = await check_user_channel(message.from_user.id)
     if not is_sub:
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="📢 Obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
             [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_sub")]
         ])
-        await message.answer("⚠️ Kanalga obuna bo'ling.", reply_markup=kb)
+        await message.answer("⚠️ Botdan foydalanish uchun kanalimizga a'zo bo'ling.", reply_markup=kb)
     else:
-        await message.answer("🎉 Xush kelibsiz!")
+        await message.answer("🎉 Xush kelibsiz! Botdan to'liq foydalanishingiz mumkin.", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("hisobim"))
 async def cmd_my_account(message: Message):
     admin_states.pop(message.from_user.id, None)
     if message.from_user.id == ADMIN_ID:
-        await message.answer("👑 Siz Adminsiz!")
+        await message.answer("👑 Siz Adminsiz!", reply_markup=ReplyKeyboardRemove())
         return
-    await message.answer("💳 Hisobingiz...")
+    await message.answer("💳 Hisobingiz ma'lumotlari...", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("ℹ️ Yordam.")
+    await message.answer("ℹ️ Yordam bo'limi.", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("ogohlantirish"))
 async def cmd_warning(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("⚠️ Shartlar.")
+    await message.answer("⚠️ Ogohlantirish shartlari.", reply_markup=ReplyKeyboardRemove())
 
 async def handle(request):
     return web.Response(text="Bot is running!")
@@ -343,7 +334,6 @@ async def main():
     await start_web_server()
 
     scheduler = AsyncIOScheduler(timezone=UZ_TZ)
-    # Yangi vaqtlar jadvali bo'yicha sozlandi:
     scheduler.add_job(send_morning_fact, "cron", hour=9, minute=0)
     scheduler.add_job(send_lunch_poll, "cron", hour=12, minute=0)
     scheduler.add_job(send_hacker_post, "cron", hour=18, minute=0)
@@ -351,7 +341,7 @@ async def main():
     scheduler.start()
 
     await set_bot_commands(bot)
-    print("Bot yangi 4 mahal kontent va hackerlar posti bilan ishga tushdi...")
+    print("Bot xatolik tuzatilib, to'liq ishga tushdi...")
     await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
 if __name__ == "__main__":

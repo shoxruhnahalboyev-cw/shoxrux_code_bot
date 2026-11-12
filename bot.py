@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
-TOKEN = "9297297005:AAGTgrLeGC_TeXUAx0s8KOL9WccjCVEaQkQ"
+TOKEN = "9297297005:AAF_5eNRkMdx3eDnLeJWn63eJR_NmKxPxFI"
 CHANNEL_USERNAME = "@shoxrux_code"      
 ADMIN_ID = 7439126820                   
 STARTING_BALANCE = 3000                 

@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
 
-TOKEN = "9297297005:AAF_5eNRkMdx3eDnLeJWn63eJR_NmKxPxFI"
+TOKEN = "9297297005:AAGTgrLeGC_TeXUAx0s8KOL9WccjCVEaQkQ"
 CHANNEL_USERNAME = "@shoxrux_code"      
 ADMIN_ID = 7439126820                   
 STARTING_BALANCE = 3000                 
@@ -77,6 +77,12 @@ def db_start():
 db_start()
 
 admin_states = {}
+
+# --- CANCEL BUYRUG'I BIRINCHI TURISHI KERAK ---
+@dp.message(Command("cancel"))
+async def cmd_cancel(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    await message.answer("✅ Barcha amallar bekor qilindi.", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
@@ -155,14 +161,19 @@ async def set_template_start(message: Message):
         "*(Bekor qilish uchun /cancel yuboring)*"
     )
 
+# --- MATNNI QABUL QILISH (BUYRUQLARNI O'TKAZIB YUBORISH BILAN) ---
 @dp.message(F.text & ~F.command())
 async def handle_admin_text(message: Message):
+    # Agar xabar / bilan boshlansa (komanda bo'lsa), buni umuman usulamaymiz!
+    if message.text and message.text.startswith("/"):
+        return
+
     if message.from_user.id != ADMIN_ID or admin_states.get(ADMIN_ID) != "waiting_for_template":
         return
     
     parts = message.text.split("---")
     if len(parts) < 7:
-        await message.answer("❌ Xatolik! 7 ta qismni `---` bilan ajratib to'liq yuboring.")
+        await message.answer("❌ Xatolik! 7 ta qismni `---` bilan ajratib to'liq yuboring. Bekor qilish uchun /cancel yuboring.")
         return
     
     try:
@@ -266,11 +277,6 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="cancel", description="Bekor qilish")
     ]
     await bot.set_my_commands(commands)
-
-@dp.message(Command("cancel"))
-async def cmd_cancel(message: Message):
-    admin_states.pop(message.from_user.id, None)
-    await message.answer("✅ Barcha amallar bekor qilindi.", reply_markup=ReplyKeyboardRemove())
 
 async def check_user_channel(user_id: int) -> bool:
     if user_id == ADMIN_ID:

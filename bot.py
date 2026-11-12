@@ -62,13 +62,13 @@ def db_start():
             INSERT INTO daily_template (id, morning_fact, lunch_poll_q, lunch_poll_opts, hacker_text, quiz_q, quiz_opts, quiz_correct)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            "🚀 <b>Dasturlash olamidagi eng qiziqarli faktlar:</b>\n\n1. Ilk kompyuter bugi haqiqiy hasharot (qo'ng'iz) bo'lgan...\n(Bu yerga 30 qatordan iborat to'liq va qiziqarli ertalabgi IT fakt yoziladi)",
-            "Bugungi kundagi eng og'riqli muammo nima?",
-            "Vaqt yetishmasligi, Motivatsiya yo'qligi, Sever o'chib qolishi, Barchasi",
-            "💀 <b>Hackerlar olami:</b>\n\nDunyo bo'yicha eng mashhur kiber-hujumlar va qora va oq hat-xakerlar tarixi juda qiziq...\n(Bu yerga hackerlar haqida rasm bilan birga boradigan katta qiziqarli matn yoziladi)",
-            "Mantiqiy savol: Agar 5 ta mushuk 5 ta sichqonni 5 minutda tutsa, 100 ta mushuk 100 ta sichqonni necha minutda tutadi?",
-            "5 minut, 100 minut, 20 minut, 1 minut",
-            0
+            "🚀 Dasturlash olamidagi eng qiziqarli faktlar va yangiliklar...",
+            "Bugungi kundagi eng qiyin yo'nalish qaysi?",
+            "Frontend, Backend, Mobile, AI va Data Science",
+            "💀 Hackerlar tarixi va kiberxavfsizlik asoslari...",
+            "Mantiqiy savol: Python tilida qaysi ma'lumot turi o'zgarmas (immutable) hisoblanadi?",
+            "List, Tuple, Dictionary, Set",
+            1
         ))
         
     conn.commit()
@@ -300,6 +300,15 @@ async def cmd_start(message: Message):
     else:
         await message.answer("🎉 Xush kelibsiz! Botdan to'liq foydalanishingiz mumkin.", reply_markup=ReplyKeyboardRemove())
 
+@dp.callback_query(F.data == "check_sub")
+async def callback_check_sub(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if await check_user_channel(user_id):
+        await callback.message.delete()
+        await callback.message.answer("✅ Obuna tasdiqlandi! Xush kelibsiz.")
+    else:
+        await callback.answer("❌ Siz hali kanalga a'zo bo'lmadingiz!", show_alert=True)
+
 @dp.message(Command("hisobim"))
 async def cmd_my_account(message: Message):
     admin_states.pop(message.from_user.id, None)
@@ -341,7 +350,7 @@ async def main():
     scheduler.start()
 
     await set_bot_commands(bot)
-    print("Bot xatolik tuzatilib, to'liq ishga tushdi...")
+    print("Bot muvaffaqiyatli ishga tushdi...")
     await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
 if __name__ == "__main__":

@@ -78,11 +78,35 @@ db_start()
 
 admin_states = {}
 
-# --- CANCEL BUYRUG'I BIRINCHI TURISHI KERAK ---
-@dp.message(Command("cancel"))
-async def cmd_cancel(message: Message):
+async def check_user_channel(user_id: int) -> bool:
+    if user_id == ADMIN_ID:
+        return True
+    try:
+        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        if member.status in ["member", "administrator", "creator"]:
+            return True
+    except:
+        pass
+    return False
+
+# ==================== 1. BARCHA KOMANDALAR (ENG TEPADA) ====================
+
+@dp.message(CommandStart())
+async def cmd_start(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("✅ Barcha amallar bekor qilindi.", reply_markup=ReplyKeyboardRemove())
+    if message.from_user.id == ADMIN_ID:
+        await message.answer("👑 <b>Xush kelibsiz, Admin!</b>", reply_markup=ReplyKeyboardRemove())
+        return
+
+    is_sub = await check_user_channel(message.from_user.id)
+    if not is_sub:
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📢 Obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
+            [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_sub")]
+        ])
+        await message.answer("⚠️ Botdan foydalanish uchun kanalimizga a'zo bo'ling.", reply_markup=kb)
+    else:
+        await message.answer("🎉 Xush kelibsiz! Botdan to'liq foydalanishingiz mumkin.", reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
@@ -114,6 +138,40 @@ async def cmd_admin(message: Message):
         f"🕒 Hozirgi vaqt (Toshkent): <b>{uz_now.strftime('%H:%M')}</b>",
         reply_markup=keyboard
     )
+
+@dp.message(Command("cancel"))
+async def cmd_cancel(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    await message.answer("✅ Barcha amallar bekor qilindi.", reply_markup=ReplyKeyboardRemove())
+
+@dp.message(Command("hisobim"))
+async def cmd_my_account(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    if message.from_user.id == ADMIN_ID:
+        await message.answer("👑 Siz Adminsiz!", reply_markup=ReplyKeyboardRemove())
+        return
+    await message.answer("💳 Hisobingiz ma'lumotlari...", reply_markup=ReplyKeyboardRemove())
+
+@dp.message(Command("help"))
+async def cmd_help(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    await message.answer("ℹ️ Yordam bo'limi.", reply_markup=ReplyKeyboardRemove())
+
+@dp.message(Command("ogohlantirish"))
+async def cmd_warning(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    await message.answer("⚠️ Ogohlantirish shartlari.", reply_markup=ReplyKeyboardRemove())
+
+@dp.callback_query(F.data == "check_sub")
+async def callback_check_sub(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if await check_user_channel(user_id):
+        await callback.message.delete()
+        await callback.message.answer("✅ Obuna tasdiqlandi! Xush kelibsiz.")
+    else:
+        await callback.answer("❌ Siz hali kanalga a'zo bo'lmadingiz!", show_alert=True)
+
+# ==================== 2. ADMIN TUGMALARI VA MATNLAR ====================
 
 @dp.message(F.text == "❌ Bekor qilish")
 async def cancel_action(message: Message):
@@ -161,13 +219,8 @@ async def set_template_start(message: Message):
         "*(Bekor qilish uchun /cancel yuboring)*"
     )
 
-# --- MATNNI QABUL QILISH (BUYRUQLARNI O'TKAZIB YUBORISH BILAN) ---
-@dp.message(F.text & ~F.command())
+@dp.message(F.text)
 async def handle_admin_text(message: Message):
-    # Agar xabar / bilan boshlansa (komanda bo'lsa), buni umuman usulamaymiz!
-    if message.text and message.text.startswith("/"):
-        return
-
     if message.from_user.id != ADMIN_ID or admin_states.get(ADMIN_ID) != "waiting_for_template":
         return
     
@@ -199,6 +252,8 @@ async def handle_admin_text(message: Message):
         await message.answer("✅ **Yangi kunlik shablon muvaffaqiyatli saqlandi!**", reply_markup=ReplyKeyboardRemove())
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}\nFormatni tekshirib qaytadan yuboring.")
+
+# ==================== 3. AVTO-POSTLAR VA SERVER ====================
 
 async def send_morning_fact():
     try:
@@ -277,61 +332,6 @@ async def set_bot_commands(bot: Bot):
         BotCommand(command="cancel", description="Bekor qilish")
     ]
     await bot.set_my_commands(commands)
-
-async def check_user_channel(user_id: int) -> bool:
-    if user_id == ADMIN_ID:
-        return True
-    try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
-        if member.status in ["member", "administrator", "creator"]:
-            return True
-    except:
-        pass
-    return False
-
-@dp.message(CommandStart())
-async def cmd_start(message: Message):
-    admin_states.pop(message.from_user.id, None)
-    if message.from_user.id == ADMIN_ID:
-        await message.answer("👑 <b>Xush kelibsiz, Admin!</b>", reply_markup=ReplyKeyboardRemove())
-        return
-
-    is_sub = await check_user_channel(message.from_user.id)
-    if not is_sub:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📢 Obuna bo'lish", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}")],
-            [InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_sub")]
-        ])
-        await message.answer("⚠️ Botdan foydalanish uchun kanalimizga a'zo bo'ling.", reply_markup=kb)
-    else:
-        await message.answer("🎉 Xush kelibsiz! Botdan to'liq foydalanishingiz mumkin.", reply_markup=ReplyKeyboardRemove())
-
-@dp.callback_query(F.data == "check_sub")
-async def callback_check_sub(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if await check_user_channel(user_id):
-        await callback.message.delete()
-        await callback.message.answer("✅ Obuna tasdiqlandi! Xush kelibsiz.")
-    else:
-        await callback.answer("❌ Siz hali kanalga a'zo bo'lmadingiz!", show_alert=True)
-
-@dp.message(Command("hisobim"))
-async def cmd_my_account(message: Message):
-    admin_states.pop(message.from_user.id, None)
-    if message.from_user.id == ADMIN_ID:
-        await message.answer("👑 Siz Adminsiz!", reply_markup=ReplyKeyboardRemove())
-        return
-    await message.answer("💳 Hisobingiz ma'lumotlari...", reply_markup=ReplyKeyboardRemove())
-
-@dp.message(Command("help"))
-async def cmd_help(message: Message):
-    admin_states.pop(message.from_user.id, None)
-    await message.answer("ℹ️ Yordam bo'limi.", reply_markup=ReplyKeyboardRemove())
-
-@dp.message(Command("ogohlantirish"))
-async def cmd_warning(message: Message):
-    admin_states.pop(message.from_user.id, None)
-    await message.answer("⚠️ Ogohlantirish shartlari.", reply_markup=ReplyKeyboardRemove())
 
 async def handle(request):
     return web.Response(text="Bot is running!")

@@ -10,8 +10,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiohttp import web
+import random
 
-TOKEN = "9297297005:AAHDruT721XPVCjxsQsVCmoil0e9PM4omSk"
+TOKEN = "9297297005:AAGTgrLeGC_TeXUAx0s8KOL9WccjCVEaQkQ"
 CHANNEL_USERNAME = "@shoxrux_code"      
 ADMIN_ID = 7439126820                   
 STARTING_BALANCE = 3000                 
@@ -62,10 +63,17 @@ def db_start():
             INSERT INTO daily_template (id, morning_fact, lunch_poll_q, lunch_poll_opts, hacker_text, quiz_q, quiz_opts, quiz_correct)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            "🚀 Dasturlash olamidagi eng qiziqarli faktlar va yangiliklar...",
-            "Bugungi kundagi eng qiyin yo'nalish qaysi?",
+            "🚀 Dasturlash olamidagi eng qiziqarli faktlar va yangiliklar... Bugungi kunda sun'iy intellekt dasturchilarning ishini 40% gacha tezlashtirmoqda!",
+            "Bugungi kundagi eng qiyin va talabgir yo'nalish qaysi?",
             "Frontend, Backend, Mobile, AI va Data Science",
-            "💀 Hackerlar tarixi va kiberxavfsizlik asoslari...",
+            "💀 **Kiberxavfsizlik va Xakerlar olami: Tarixdagi eng mashhur hujumlar**\n\n"
+            "Dunyodagi eng sirli va qo'rqinchli kiberguruhlar qanday ishlaydi? Ko'pchilik xakerlarni faqat kompyuter oldida o'tirib pul o'g'irlaydiganlar deb o'ylaydi. Aslida esa ularning aksariyati dunyodagi yirik korporatsiyalar va davlat tizimlarining zaif tomonlarini topib, kiberxavfsizlikni kuchaytirishga yordam beradigan mutaxassislar (White Hat) yoki qora niyatli kiberjinoyatchilardir (Black Hat).\n\n"
+            "Masalan, tarixdagi eng mashhur 'Anonymous' guruhi o'z vaqtida yirik hukumatlar, banklar va korporatsiyalarning saytlarini qulatib, maxfiy hujjatlarni fosh qilgan. Ularning asosiy quroli — ijtimoiy muhandislik (Social Engineering) va murakkab DDoS hujumlaridir.\n\n"
+            "O'zingizni kiberxavfsizlikdan himoya qilish uchun nima qilish kerak?\n"
+            "1. Murakkab parollardan foydalaning va ularni hech qachon takrorlamang.\n"
+            "2. Ikki bosqichli autentifikatsiyani (2FA) doim yoqib qo'ying.\n"
+            "3. Noma'lum havolalarga (phishing) aslo kirmang!\n\n"
+            "*Siz kiberxavfsizlik haqida yana qanday qiziqarli ma'lumotlarni bilishni xohlaysiz? Izohda yozib qoldiring!*",
             "Mantiqiy savol: Python tilida qaysi ma'lumot turi o'zgarmas (immutable) hisoblanadi?",
             "List, Tuple, Dictionary, Set",
             1
@@ -102,7 +110,6 @@ async def cmd_start(message: Message):
         await message.answer("👑 <b>Xush kelibsiz, Admin!</b>", reply_markup=ReplyKeyboardRemove())
         return
 
-    # Referral argumentini olish (masalan: /start 123456789)
     args = message.text.split()
     referrer_id = None
     if len(args) > 1 and args[1].isdigit():
@@ -110,7 +117,6 @@ async def cmd_start(message: Message):
         if ref_id != user_id:
             referrer_id = ref_id
 
-    # Bazaga foydalanuvchini qo'shish (agar oldin bo'lmasa)
     conn = sqlite3.connect("bot_base.db")
     cursor = conn.cursor()
     cursor.execute("SELECT user_id, balance FROM users WHERE user_id = ?", (user_id,))
@@ -122,7 +128,6 @@ async def cmd_start(message: Message):
             VALUES (?, ?, ?, 0, ?, ?)
         """, (user_id, referrer_id, STARTING_BALANCE, first_name, username))
         
-        # Agar taklif qilgan odam bo'lsa va u bazada bo'lsa
         if referrer_id:
             cursor.execute("SELECT invited_count, balance FROM users WHERE user_id = ?", (referrer_id,))
             ref_user = cursor.fetchone()
@@ -140,7 +145,6 @@ async def cmd_start(message: Message):
         conn.commit()
     conn.close()
 
-    # Obunani tekshirish
     is_sub = await check_user_channel(user_id)
     if not is_sub:
         kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -240,7 +244,16 @@ async def cmd_my_account(message: Message):
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     admin_states.pop(message.from_user.id, None)
-    await message.answer("ℹ️ <b>Yordam bo'limi:</b>\n\nBotimiz orqali IT olamidagi qiziqarli faktlar va so'rovnomalardan bahramand bo'ling.", reply_markup=ReplyKeyboardRemove())
+    help_text = (
+        "ℹ️ <b>Yordam va Buyruqlar:</b>\n\n"
+        "/start - Botni ishga tushirish\n"
+        "/hisobim - Balans va do'stlar sonini ko'rish\n"
+        "/resurslar - Foydali IT saytlar va kitoblar\n"
+        "/maslahat - Dasturlash bo'yicha maslahatlar\n"
+        "/atamalar - Kunlik IT atamalar lug'ati\n"
+        "/ogohlantirish - Qoidalar va shartlar"
+    )
+    await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
 
 @dp.message(Command("ogohlantirish"))
 async def cmd_warning(message: Message):
@@ -253,6 +266,43 @@ async def cmd_warning(message: Message):
         "4. Qoidabuzarlik aniqlansa, balans muzlatib qo'yiladi."
     )
     await message.answer(warning_text, reply_markup=ReplyKeyboardRemove())
+
+# --- QO'SHILGAN YANGI IT FUNKSIYALAR ---
+
+@dp.message(Command("resurslar"))
+async def cmd_resources(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    text = (
+        "📚 <b>Dasturlashni o'rganish uchun eng yaxshi resurslar:</b>\n\n"
+        "1. <b>YouTube:</b> Mohirdev, Shoxrux Code, Abror Parpiev, Dasturlash asoslari.\n"
+        "2. <b>Platformalar:</b> LeetCode, HackerRank (algoritmlar uchun).\n"
+        "3. <b>Amaliyot:</b> GitHub, Frontend Mentor.\n"
+        "4. <b>Kitoblar:</b> 'Python Programming', 'Clean Code' (Robert Martin)."
+    )
+    await message.answer(text, reply_markup=ReplyKeyboardRemove())
+
+@dp.message(Command("maslahat"))
+async def cmd_advice(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    tips = [
+        "💡 <b>Maslahat:</b> Har kuni kamida 1 soat kod yozing. Faqat nazariya o'qish yetarli emas!",
+        "💡 <b>Maslahat:</b> Xatoliklardan (Errors) qo'rqmang. Xatolik — bu sizning o'sayotganingiz belgisi.",
+        "💡 <b>Maslahat:</b> Kod yozishda ingliz tilini o'rganish juda muhim, hujjatlar (documentation) asosan ingliz tilida bo'ladi.",
+        "💡 <b>Maslahat:</b> Kichik loyihalardan boshlang va ularni oxirigacha yetkazing."
+    ]
+    await message.answer(random.choice(tips), reply_markup=ReplyKeyboardRemove())
+
+@dp.message(Command("atamalar"))
+async def cmd_terms(message: Message):
+    admin_states.pop(message.from_user.id, None)
+    terms = [
+        "📖 <b>API (Application Programming Interface):</b> Turli dasturlarning bir-biri bilan muloqot qilishini ta'minlovchi ko'prik.",
+        "📖 <b>Git:</b> Kodlar tarixini saqlaydigan va jamoada ishlashni osonlashtiradigan versiyalarni boshqarish tizimi.",
+        "📖 <b>Docker:</b> Dasturni barcha kerakli muhiti bilan birga konteynerga solib, istalgan serverda bir xilda ishlatish vositasi.",
+        "📖 <b>Backend:</b> Foydalanuvchiga ko'rinmaydigan, ma'lumotlar bazasi va server mantiqi ishlaydigan qism."
+    ]
+    await message.answer(random.choice(terms), reply_markup=ReplyKeyboardRemove())
+
 
 # ==================== 2. ADMIN TUGMALARI VA MATNLAR ====================
 
@@ -374,6 +424,7 @@ async def send_hacker_post():
         if row:
             text = row[0]
             hacker_photo_url = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5"
+            # FAQAT MATN VA RASMNING O'ZI KETADI (ortiqcha yozuvlar olib tashlandi)
             await bot.send_photo(chat_id=CHANNEL_USERNAME, photo=hacker_photo_url, caption=text)
     except Exception as e:
         print(f"18:00 xatolik: {e}")
@@ -409,6 +460,9 @@ async def set_bot_commands(bot: Bot):
     commands = [
         BotCommand(command="start", description="Botni ishga tushirish"),
         BotCommand(command="hisobim", description="Hisobdagi pulni ko'rish"),
+        BotCommand(command="resurslar", description="Foydali IT resurslar"),
+        BotCommand(command="maslahat", description="Dasturlash bo'yicha maslahat"),
+        BotCommand(command="atamalar", description="Kunlik IT atamalar"),
         BotCommand(command="help", description="Yordam olish"),
         BotCommand(command="ogohlantirish", description="Shartlar"),
         BotCommand(command="admin", description="Admin paneli"),

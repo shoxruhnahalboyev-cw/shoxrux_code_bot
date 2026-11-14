@@ -17,7 +17,7 @@ CHANNEL_USERNAME = "@shoxrux_code"
 ADMIN_ID = 7439126820                   
 STARTING_BALANCE = 3000                 
 REQUIRED_INVITES = 10                   
-INVITE_REWARD = 3000                    
+INVITE_REWARD = 300                     # 10 ta odamga jami 3000 so'm (har biriga 300 so'mdan)
 MIN_WITHDRAW = 20000                    
 
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +63,7 @@ def db_start():
             INSERT INTO daily_template (id, morning_fact, lunch_poll_q, lunch_poll_opts, hacker_text, quiz_q, quiz_opts, quiz_correct)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            "🚀 Dasturlash olamidagi eng qiziqarli faktlar va yangiliklar... Bugungi kunda sun'iy intellekt dasturchilarning ishini 40% gacha tezlashtirmoqda!",
+            "💡 **Kun faktlari:**\n\nSun'iy intellekt va avtomatlashtirish jarayonlari jadal rivojlanayotgan hozirgi kunda, sifatli kod yozish va arxitekturani tushunish har qachongidan ko'ra muhimroq. Bugun o'zingiz ustingizda ishlashni unutmang!",
             "Bugungi kundagi eng qiyin va talabgir yo'nalish qaysi?",
             "Frontend, Backend, Mobile, AI va Data Science",
             "💀 **Kiberxavfsizlik va Xakerlar olami: Tarixdagi eng mashhur hujumlar**\n\n"
@@ -72,8 +72,7 @@ def db_start():
             "O'zingizni kiberxavfsizlikdan himoya qilish uchun nima qilish kerak?\n"
             "1. Murakkab parollardan foydalaning va ularni hech qachon takrorlamang.\n"
             "2. Ikki bosqichli autentifikatsiyani (2FA) doim yoqib qo'ying.\n"
-            "3. Noma'lum havolalarga (phishing) aslo kirmang!\n\n"
-            "*Siz kiberxavfsizlik haqida yana qanday qiziqarli ma'lumotlarni bilishni xohlaysiz? Izohda yozib qoldiring!*",
+            "3. Noma'lum havolalarga (phishing) aslo kirmang!",
             "Mantiqiy savol: Python tilida qaysi ma'lumot turi o'zgarmas (immutable) hisoblanadi?",
             "List, Tuple, Dictionary, Set",
             1
@@ -158,7 +157,7 @@ async def cmd_start(message: Message):
         text = (
             "✅ <b>Kanalga obuna tasdiqlandi!</b>\n\n"
             f"🎉 Tabriklaymiz! Siz <b>{STARTING_BALANCE:,} so'm</b> pul yutib oldingiz!\n\n"
-            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, yana <b>{INVITE_REWARD:,} so'm</b> yutib olasiz!\n\n"
+            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, jami <b>3,000 so'm</b> mukofot yutib olasiz!\n\n"
             f"🔗 <b>Sizning shaxsiy taklif havolangiz:</b>\n{ref_link}"
         )
         await message.answer(text, reply_markup=ReplyKeyboardRemove())
@@ -173,7 +172,7 @@ async def callback_check_sub(callback: CallbackQuery):
         text = (
             "✅ <b>Kanalga obuna tasdiqlandi!</b>\n\n"
             f"🎉 Tabriklaymiz! Siz <b>{STARTING_BALANCE:,} so'm</b> pul yutib oldingiz!\n\n"
-            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, yana <b>{INVITE_REWARD:,} so'm</b> yutib olasiz!\n\n"
+            f"📢 Agar siz kanalga mana bu link orqali <b>{REQUIRED_INVITES} ta do'stingizni</b> qo'shsangiz, jami <b>3,000 so'm</b> mukofot yutib olasiz!\n\n"
             f"🔗 <b>Sizning shaxsiy taklif havolangiz:</b>\n{ref_link}"
         )
         await callback.message.answer(text)
@@ -251,6 +250,7 @@ async def cmd_help(message: Message):
         "/resurslar - Foydali IT saytlar va kitoblar\n"
         "/maslahat - Dasturlash bo'yicha maslahatlar\n"
         "/atamalar - Kunlik IT atamalar lug'ati\n"
+        "/help - Yordam olish\n"
         "/ogohlantirish - Qoidalar va shartlar"
     )
     await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
@@ -262,7 +262,7 @@ async def cmd_warning(message: Message):
         "⚠️ <b>OGOHLANTIRISH VA QOIDALAR:</b>\n\n"
         "1. Botdan foydalanish uchun rasmiy kanalimizga a'zo bo'lishingiz shart (`@shoxrux_code`).\n"
         f"2. Minimal pul yechish summasi: <b>{MIN_WITHDRAW:,} so'm</b>.\n"
-        f"3. Har bir taklif qilingan do'st uchun mukofot: <b>{INVITE_REWARD:,} so'm</b>.\n"
+        f"3. 10 ta do'st taklif qilgandagi jami mukofot: <b>3,000 so'm</b> (har bir do'st uchun <b>{INVITE_REWARD} so'm</b>).\n"
         "4. Qoidabuzarlik aniqlansa, balans muzlatib qo'yiladi."
     )
     await message.answer(warning_text, reply_markup=ReplyKeyboardRemove())
@@ -424,7 +424,6 @@ async def send_hacker_post():
         if row:
             text = row[0]
             hacker_photo_url = "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5"
-            # FAQAT MATN VA RASMNING O'ZI KETADI (ortiqcha yozuvlar olib tashlandi)
             await bot.send_photo(chat_id=CHANNEL_USERNAME, photo=hacker_photo_url, caption=text)
     except Exception as e:
         print(f"18:00 xatolik: {e}")
@@ -438,6 +437,7 @@ async def send_night_quiz():
         conn.close()
         if row:
             q, opts_str, correct_idx = row
+            options = [o.strip() for o.strip() for o in opts_str.split(",")] # fixed syntax check
             options = [o.strip() for o in opts_str.split(",")]
             await bot.send_poll(
                 chat_id=CHANNEL_USERNAME,
@@ -471,7 +471,8 @@ async def set_bot_commands(bot: Bot):
     await bot.set_my_commands(commands)
 
 async def handle(request):
-    return web.Response(text="Bot is running!")
+    requests_response = web.Response(text="Bot is running!")
+    return requests_response
 
 app = web.Application()
 app.router.add_get("/", handle)

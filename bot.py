@@ -250,7 +250,6 @@ async def cmd_help(message: Message):
         "/resurslar - Foydali IT saytlar va kitoblar\n"
         "/maslahat - Dasturlash bo'yicha maslahatlar\n"
         "/atamalar - Kunlik IT atamalar lug'ati\n"
-        "/help - Yordam olish\n"
         "/ogohlantirish - Qoidalar va shartlar"
     )
     await message.answer(help_text, reply_markup=ReplyKeyboardRemove())
@@ -267,7 +266,7 @@ async def cmd_warning(message: Message):
     )
     await message.answer(warning_text, reply_markup=ReplyKeyboardRemove())
 
-# --- QO'SHILGAN YANGI IT FUNKSIYALAR ---
+# --- QO'SHILgAN YANGI IT FUNKSIYALAR ---
 
 @dp.message(Command("resurslar"))
 async def cmd_resources(message: Message):
@@ -437,7 +436,6 @@ async def send_night_quiz():
         conn.close()
         if row:
             q, opts_str, correct_idx = row
-            options = [o.strip() for o.strip() for o in opts_str.split(",")] # fixed syntax check
             options = [o.strip() for o in opts_str.split(",")]
             await bot.send_poll(
                 chat_id=CHANNEL_USERNAME,
@@ -471,8 +469,7 @@ async def set_bot_commands(bot: Bot):
     await bot.set_my_commands(commands)
 
 async def handle(request):
-    requests_response = web.Response(text="Bot is running!")
-    return requests_response
+    return web.Response(text="Bot is running!")
 
 app = web.Application()
 app.router.add_get("/", handle)
@@ -498,4 +495,4 @@ async def main():
     await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.main(main()) if hasattr(asyncio, 'main') else asyncio.run(main())
